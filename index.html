@@ -73,9 +73,11 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Distribución de variables por tipo</div>
+    <div class="section-title">Distribución esperada de variables por tipo</div>
     <div class="chart-wrap">
-      <canvas id="varChart" height="220"></canvas>
+      <div style="position:relative; height:340px;">
+        <canvas id="varChart"></canvas>
+      </div>
     </div>
   </div>
 
@@ -195,9 +197,11 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Variables independientes de la enfermera evaluada</div>
+    <div class="section-title">Variables independientes esperadas — perfil de la enfermera evaluada</div>
     <div class="chart-wrap">
-      <canvas id="enfChart" height="160"></canvas>
+      <div style="position:relative; height:280px;">
+        <canvas id="enfChart"></canvas>
+      </div>
     </div>
   </div>
 
@@ -210,24 +214,63 @@
 
 <script>
 const varCtx = document.getElementById('varChart').getContext('2d');
+// Color coding matches the legend below:
+//   teal  = Observación directa al paciente
+//   gold  = Historia clínica (registros)
+//   navy  = Valoración al ingreso (<2h)
+const items = [
+  {label:'Pulsioximetría hemicuerpo afectado',  type:'direct'},
+  {label:'Manguito TA hemicuerpo sano',         type:'direct'},
+  {label:'Accesos venosos hemicuerpo sano',     type:'direct'},
+  {label:'Silla familiar lado afectado',        type:'direct'},
+  {label:'Registro evaluación motora',          type:'hc'},
+  {label:'Registro cambios posturales',         type:'hc'},
+  {label:'Test disfagia MECV-V',                type:'hc'},
+  {label:'Glasgow al ingreso',                  type:'ingreso'},
+  {label:'Valoración pupilar ingreso',          type:'ingreso'},
+  {label:'BRADEN ingreso',                      type:'ingreso'},
+  {label:'DOWNTON ingreso',                     type:'ingreso'},
+];
+const colorMap = { direct:'#0D6E6E', hc:'#C8A84B', ingreso:'#0B1F3A' };
+const typeLabel = { direct:'Observación directa', hc:'Historia clínica', ingreso:'Valoración al ingreso (<2h)' };
+
 new Chart(varCtx, {
-  type: 'bar',
+  type: 'scatter',
   data: {
-    labels: ['Pulsioximetría hemicuerpo afectado','Manguito TA hemicuerpo sano','Accesos venosos hemicuerpo sano','Silla familiar lado afectado','Registro evaluación motora','Registro cambios posturales','Test disfagia MECV-V','Glasgow al ingreso','Valoración pupilar ingreso','BRADEN ingreso','DOWNTON ingreso','Glasgow/pupilar/const c/4h','Glasgow/pupilar/const c/8h'],
     datasets: [{
-      label: 'Peso en el estudio',
-      data: [8,8,7,6,9,8,9,10,10,10,10,9,9],
-      backgroundColor: ['#0D6E6E','#0D6E6E','#0D6E6E','#0D6E6E','#C8A84B','#C8A84B','#C8A84B','#0B1F3A','#0B1F3A','#0B1F3A','#0B1F3A','#C8A84B','#C8A84B'],
-      borderRadius: 6,
+      label: 'Ítem de práctica clínica',
+      data: items.map((it, i) => ({ x: 1, y: i, _type: it.type, _name: it.label })),
+      backgroundColor: items.map(it => colorMap[it.type]),
+      pointRadius: 11,
+      pointHoverRadius: 14,
+      borderColor: '#FFF',
+      borderWidth: 2,
     }]
   },
   options: {
-    indexAxis: 'y',
     responsive: true,
-    plugins: { legend:{ display:false }, tooltip:{ callbacks:{ label: (c)=> c.label } } },
+    maintainAspectRatio: false,
+    animation: { duration: 1200, easing: 'easeOutQuart', delay: (ctx) => ctx.dataIndex * 80 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => items[0].raw._name,
+          label: (ctx) => typeLabel[ctx.raw._type]
+        }
+      }
+    },
     scales: {
-      x: { display:false, max:12 },
-      y: { ticks:{ font:{size:11}, color:'#0B1F3A' } }
+      x: { display:false, min:0, max:2 },
+      y: {
+        reverse: true,
+        ticks: {
+          font:{size:11}, color:'#0B1F3A',
+          stepSize: 1,
+          callback: (v) => items[v] ? items[v].label : ''
+        },
+        grid: { color: 'rgba(11,31,58,0.05)' }
+      }
     }
   }
 });
@@ -249,6 +292,8 @@ new Chart(enfCtx, {
   },
   options: {
     responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 1400, easing: 'easeOutQuart' },
     plugins: { legend:{display:false} },
     scales: { r: { ticks:{display:false}, grid:{color:'rgba(11,31,58,0.1)'}, pointLabels:{font:{size:11},color:'#0B1F3A'} } }
   }
